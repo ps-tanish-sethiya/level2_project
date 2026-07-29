@@ -19,6 +19,10 @@ dependencies = [
     "python-dotenv>=1.0.0",
 ]
 
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["agent*", "mcp_server*", "cli*", "data*"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = "test_*.py"

@@ -4,10 +4,16 @@ Uses official `mcp` SDK (stdio transport) to register diagnostic tools and KB ma
 """
 
 import os
+import sys
 import glob
 import logging
 from typing import Dict, Any, List, Optional
 from mcp.server.fastmcp import FastMCP
+
+# Ensure project root is in sys.path for imports
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
 
 # Import all tool handlers
 from mcp_server.tools.live_build_tools import get_build_status, get_build_logs
