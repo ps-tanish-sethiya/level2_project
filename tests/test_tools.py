@@ -80,20 +80,26 @@ def test_search_error_kb():
 def test_local_incident_tools(tmp_path):
     db_file = tmp_path / "test_incidents.db"
     
-    with patch("mcp_server.tools.local_incident_tools._get_db_connection") as mock_conn:
-        conn = sqlite3.connect(db_file)
-        conn.row_factory = sqlite3.Row
-        conn.execute("""
-            CREATE TABLE incidents (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                component TEXT NOT NULL,
-                summary TEXT NOT NULL,
-                root_cause TEXT NOT NULL,
-                resolution TEXT NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        mock_conn.return_value = conn
+    # Pre-create schema
+    init_conn = sqlite3.connect(db_file)
+    init_conn.execute("""
+        CREATE TABLE IF NOT EXISTS incidents (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            component TEXT NOT NULL,
+            summary TEXT NOT NULL,
+            root_cause TEXT NOT NULL,
+            resolution TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    init_conn.close()
+
+    def get_test_conn():
+        c = sqlite3.connect(db_file)
+        c.row_factory = sqlite3.Row
+        return c
+    
+    with patch("mcp_server.tools.local_incident_tools._get_db_connection", side_effect=get_test_conn):
         
         # Test log_new_incident
         log_res = log_new_incident(

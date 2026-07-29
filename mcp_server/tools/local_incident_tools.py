@@ -5,7 +5,7 @@ Local incident tools for querying and logging past incident history in SQLite da
 import os
 import sqlite3
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, Any, List, Optional
 
 logger = logging.getLogger("devsentinel.tools.local_incidents")
@@ -125,7 +125,7 @@ def log_new_incident(component: str, summary: str, root_cause: str, resolution: 
         }
         
     try:
-        created_at = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+        created_at = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
         with conn:
             cursor = conn.cursor()
             cursor.execute("""
