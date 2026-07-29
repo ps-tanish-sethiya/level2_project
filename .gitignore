@@ -1,0 +1,32 @@
+# Environment variables & secrets
+.env
+*.env
+
+# Python Virtual Environment
+venv/
+ENV/
+env/
+
+# Python Cache & Build Artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local Databases & Vector Stores (Runtime data)
+data/incidents.db
+data/chroma_store/
+
+# IDE & System Files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

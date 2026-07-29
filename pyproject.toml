@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "devsentinel"
+version = "0.1.0"
+description = "Agentic AI assistant backed by a custom MCP server for software build/PR diagnosis"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "mcp>=1.2.0",
+    "google-generativeai>=0.8.0",
+    "groq>=0.18.0",
+    "chromadb>=0.4.24",
+    "sentence-transformers>=2.2.2",
+    "httpx>=0.27.0",
+    "pydantic>=2.0.0",
+    "python-dotenv>=1.0.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_functions = "test_*"
+asyncio_mode = "auto"
