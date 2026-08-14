@@ -7,73 +7,27 @@
 ## 🏗️ Architecture & Data Flow Diagram
 
 ```mermaid
-flowchart TD
-    %% Custom Styling
-    classDef clientStyle fill:#0f172a,stroke:#38bdf8,stroke-width:2px,color:#fff;
-    classDef agentStyle fill:#1e1b4b,stroke:#818cf8,stroke-width:2px,color:#fff;
-    classDef llmStyle fill:#064e3b,stroke:#34d399,stroke-width:2px,color:#fff;
-    classDef mcpStyle fill:#3b0764,stroke:#c084fc,stroke-width:2px,color:#fff;
-    classDef liveStyle fill:#111827,stroke:#f43f5e,stroke-width:2px,color:#fff;
-    classDef localStyle fill:#111827,stroke:#fbbf24,stroke-width:2px,color:#fff;
-    classDef evalStyle fill:#312e81,stroke:#a5b4fc,stroke-width:2px,color:#fff;
-    classDef reportStyle fill:#022c22,stroke:#10b981,stroke-width:2px,color:#fff;
-
-    %% 🖥️ CLIENT LAYER
-    subgraph Clients ["🖥️ Presentation & Protocol Layer"]
-        CLI["Rich Terminal CLI<br/><code>cli/main.py</code>"]:::clientStyle
-        EXT["External MCP Clients<br/><i>(Claude Desktop / Cursor / VS Code)</i>"]:::clientStyle
+flowchart LR
+    %% Dataflow Pipeline
+    A["User Input Query"] --> B["ReAct Agent"]
+    
+    subgraph Loop ["ReAct Iterative Reasoning Cycle"]
+        B --> C["Dual LLM Router"]
+        C --> D{"Tool Needed?"}
+        D -- Yes --> E["MCP Tool Call"]
+        E --> F["Execute Tool Logic"]
+        F --> G["Observation Result"]
+        G --> B
     end
 
-    %% 🤖 AGENT & LLM LAYER
-    subgraph CoreEngine ["🤖 ReAct Agent Engine & Failover Chain"]
-        Agent["DevOps AI ReAct Agent<br/><code>agent/agent.py</code>"]:::agentStyle
-        
-        subgraph LLMs ["⚡ Multi-Provider LLM Resilience"]
-            Gemini["1. Primary: Google Gemini 1.5 Flash"]:::llmStyle
-            Groq["2. Fallback: Groq Llama-3.3-70B"]:::llmStyle
-            Ollama["3. Local: Ollama llama3.2:3b"]:::llmStyle
-        end
+    D -- No (Final Answer) --> H["Executive Diagnosis Report"]
+
+    subgraph Exec ["Tool Execution Targets"]
+        F -.-> I["GitHub Actions API"]
+        F -.-> J["OSV.dev Vulnerability DB"]
+        F -.-> K["ChromaDB Vector RAG"]
+        F -.-> L["SQLite Incident Memory"]
     end
-
-    %% 🔌 MCP TOOL SERVER LAYER
-    subgraph MCPInfra ["🔌 Custom Model Context Protocol (MCP) Server"]
-        MCPClient["MCP Client & Dispatcher<br/><code>agent/mcp_client.py</code>"]:::mcpStyle
-
-        subgraph LiveTools ["🌐 Live External APIs & Scanners"]
-            GH["GitHub Actions & REST API<br/><i>(Build Status & Live Code Files)</i>"]:::liveStyle
-            Sonar["SonarCloud & AST Engine<br/><i>(Code Quality & Cyclomatic Complexity)</i>"]:::liveStyle
-            Sec["OSV.dev & PyPI Registries<br/><i>(Live CVE Vulnerability Scans)</i>"]:::liveStyle
-        end
-
-        subgraph LocalTools ["💾 Local Knowledge & DB"]
-            RAG["ChromaDB Vector RAG<br/><i>(Error Solution Retrieval)</i>"]:::localStyle
-            DB["SQLite Incident Database<br/><i>(Human-in-the-Loop Memory)</i>"]:::localStyle
-        end
-    end
-
-    %% 📊 EVALUATION SUITE
-    subgraph Evaluation ["📊 Multi-Tiered Ragas Evaluation Suite"]
-        Ragas["Official Ragas 5-Metric Evaluator<br/><code>eval/evaluate_ragas.py</code><br/><b>Score: 95.7% Grade A+</b>"]:::evalStyle
-    end
-
-    %% 📋 EXECUTIVE OUTPUT
-    subgraph Synthesis ["📋 Executive Synthesis"]
-        Report["Synthesized Executive Diagnosis Report<br/><i>(Root Cause, Telemetry Evidence & Fixes)</i>"]:::reportStyle
-    end
-
-    %% 🔄 FLOW CONNECTIONS
-    CLI & EXT -->|User Query| Agent
-    Agent <-->|Reasoning & Tool Selection| Gemini
-    Gemini -.->|Failover on 429/Timeout| Groq
-    Groq -.->|Failover on Outage| Ollama
-
-    Agent -->|Structured Tool Calls| MCPClient
-    MCPClient --> GH & Sonar & Sec & RAG & DB
-    GH & Sonar & Sec & RAG & DB -->|Telemetry Observations| Agent
-
-    Agent -->|Execution Telemetry| Ragas
-    Agent -->|Synthesizes Verdict| Report
-    Report --> CLI & EXT
 ```
 
 ---
