@@ -1,4 +1,4 @@
-# 🛡️ DevSentinel v2.0 -- Agentic Build, Code Quality & PR Diagnosis System
+# 🛡️ DevSentinel -- Agentic Build, Code Quality & PR Diagnosis System
 
 **DevSentinel** is a production-grade ReAct agentic AI assistant powered by a **custom Model Context Protocol (MCP) server**. It automates software build failure diagnosis, SonarCloud code quality auditing, Pull Request (PR) security analysis, and infrastructure triage by orchestrating **11 specialized MCP tools** across live external APIs (GitHub Actions, SonarCloud, OSV.dev, PyPI, Open-Meteo) and local vector/database engines.
 
