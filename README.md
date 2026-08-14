@@ -101,6 +101,15 @@ GITHUB_DEMO_REPO=ps-tanish-sethiya/demo-target-repo
 python cli/main.py
 ```
 
+### 4. Run Streamlit Web Dashboard (Frontend)
+```bash
+streamlit run web/app.py
+```
+*Alternatively, run via python module:*
+```bash
+python -m streamlit run web/app.py
+```
+
 ---
 
 ## 🔌 Connecting to External MCP Clients (Claude Desktop / Cursor / VS Code)
