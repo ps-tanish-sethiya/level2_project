@@ -11,6 +11,8 @@ from mcp_server.tools.live_security_tools import check_dependency_vulnerabilitie
 from mcp_server.tools.live_repo_tools import get_recent_commits, check_service_status
 from mcp_server.tools.local_kb_tools import search_error_kb
 from mcp_server.tools.local_incident_tools import get_past_incidents, log_new_incident
+from mcp_server.tools.live_weather_tools import get_weather_by_ip
+from mcp_server.tools.code_quality_tools import check_code_quality
 
 logger = logging.getLogger("devsentinel.agent.mcp_client")
 
@@ -157,6 +159,35 @@ class MCPClientWrapper:
                         "required": ["component", "summary", "root_cause", "resolution"]
                     }
                 }
+            },
+            "get_weather_by_ip": {
+                "func": get_weather_by_ip,
+                "schema": {
+                    "name": "get_weather_by_ip",
+                    "description": "Get current weather information by IP address or location.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "ip_address": {"type": "string", "description": "Target IP address or 'auto' for current location"}
+                        },
+                        "required": []
+                    }
+                }
+            },
+            "check_code_quality": {
+                "func": check_code_quality,
+                "schema": {
+                    "name": "check_code_quality",
+                    "description": "Perform static code analysis, AST cyclomatic complexity checks, security linting, and quality rating score for source files.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "file_path": {"type": "string", "description": "Target source code file path"},
+                            "code_snippet": {"type": "string", "description": "Optional code string snippet"}
+                        },
+                        "required": []
+                    }
+                }
             }
         }
 
@@ -166,14 +197,35 @@ class MCPClientWrapper:
 
     def call_tool(self, tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Execute a tool call against the MCP server registry."""
-        if tool_name not in self._tool_registry:
+        lookup_name = tool_name
+        if lookup_name not in self._tool_registry and ":" in lookup_name:
+            lookup_name = lookup_name.split(":")[-1]
+
+        if lookup_name not in self._tool_registry:
             logger.error(f"Requested tool '{tool_name}' not found in MCP registry.")
             return {"error": f"Tool '{tool_name}' is not registered."}
 
-        handler = self._tool_registry[tool_name]["func"]
+        # Coerce known integer parameters if passed as string
+        coerced_args = dict(arguments) if arguments else {}
+        for key in ("limit", "top_k"):
+            if key in coerced_args and isinstance(coerced_args[key], str):
+                try:
+                    coerced_args[key] = int(coerced_args[key])
+                except ValueError:
+                    pass
+
+        # Auto-substitute default GITHUB_DEMO_REPO if placeholder string is passed
+        import os
+        default_target_repo = os.getenv("GITHUB_DEMO_REPO", "ps-tanish-sethiya/demo-target-repo")
+        if "repo" in coerced_args:
+            repo_val = str(coerced_args["repo"]).strip().lower()
+            if repo_val in ("current/repository", "owner/repo", "repo", "current_repo", "your_username/demo-target-repo", ""):
+                coerced_args["repo"] = default_target_repo
+
+        handler = self._tool_registry[lookup_name]["func"]
         try:
-            logger.info(f"Executing MCP Tool Call: {tool_name}({arguments})")
-            result = handler(**arguments)
+            logger.info(f"Executing MCP Tool Call: {tool_name}({coerced_args})")
+            result = handler(**coerced_args)
             return result
         except Exception as e:
             logger.error(f"Error during MCP tool '{tool_name}' execution: {e}")

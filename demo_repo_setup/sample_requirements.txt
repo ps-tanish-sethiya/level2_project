@@ -1,4 +1,0 @@
-# Demo target repository requirements pinned to obsolete versions with known CVEs
-pyyaml==5.1
-requests==2.20.0
-pytest>=8.0.0

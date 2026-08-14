@@ -6,6 +6,15 @@ import os
 import logging
 from typing import Dict, Any, List
 
+os.environ["HF_HUB_DISABLE_SYMLINKS_WARNING"] = "1"
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+os.environ["HF_HUB_DISABLE_IMPLICIT_TOKEN_WARNING"] = "1"
+os.environ["HF_HUB_OFFLINE"] = "1"
+os.environ["TRANSFORMERS_OFFLINE"] = "1"
+
+import warnings
+warnings.filterwarnings("ignore")
+
 logger = logging.getLogger("devsentinel.tools.local_kb")
 
 # Global cached Chroma client & collection to avoid repeated re-instantiation overhead
@@ -57,6 +66,11 @@ def search_error_kb(error_text: str, top_k: int = 3) -> Dict[str, Any]:
         Structured dict with list of matches (exceeding similarity threshold >= 0.35),
         each containing title, snippet, recommended_fix, similarity score.
     """
+    try:
+        top_k = int(top_k)
+    except Exception:
+        top_k = 3
+        
     collection = _get_collection()
     
     if collection is None or collection.count() == 0:
@@ -103,3 +117,10 @@ def search_error_kb(error_text: str, top_k: int = 3) -> Dict[str, Any]:
             "matches": [],
             "error": f"Vector KB search exception: {str(e)}"
         }
+
+# Pre-warm collection on import to eliminate first-query embedding overhead
+try:
+    import threading
+    threading.Thread(target=_get_collection, daemon=True).start()
+except Exception:
+    pass

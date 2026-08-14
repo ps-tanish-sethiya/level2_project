@@ -1,5 +1,5 @@
 """
-Unit tests for the LLM Provider layer, specifically validating the Gemini -> Groq failover logic.
+Unit tests for the LLM Provider layer, validating the Gemini -> Ollama -> Groq failover logic.
 """
 
 import pytest
@@ -28,69 +28,70 @@ def test_gemini_primary_success():
         mock_gemini.assert_called_once()
 
 
-def test_gemini_rate_limit_failover_to_groq():
+def test_gemini_rate_limit_failover_to_ollama():
     """
     Test explicit failover: Mock a Gemini 429 rate limit exception and assert the call
-    transparently succeeds via Groq.
+    transparently succeeds via local Ollama.
     """
     provider = DualLLMProvider()
     
-    mock_groq_resp = LLMResponse(
-        content="Groq fallback response: Recommend merging PR.",
+    mock_ollama_resp = LLMResponse(
+        content="Ollama local fallback response: Recommend merging PR.",
         tool_calls=[],
-        provider_used="groq",
+        provider_used="ollama",
         error=None
     )
     
-    # Simulate Gemini failing with HTTP 429 Rate Limit error
     with patch.object(provider, "_call_gemini", side_effect=Exception("HTTP 429 Rate Limit Exceeded")) as mock_gemini:
-        with patch.object(provider, "_call_groq", return_value=mock_groq_resp) as mock_groq:
+        with patch.object(provider, "_call_ollama", return_value=mock_ollama_resp) as mock_ollama:
             res = provider.chat(
                 messages=[{"role": "user", "content": "Is this PR safe?"}],
                 tools=[]
             )
-            assert res.provider_used == "groq"
-            assert "Groq fallback" in res.content
+            assert res.provider_used == "ollama"
+            assert "Ollama local fallback" in res.content
             mock_gemini.assert_called_once()
-            mock_groq.assert_called_once()
+            mock_ollama.assert_called_once()
 
 
-def test_gemini_timeout_failover_to_groq():
+def test_gemini_and_ollama_failover_to_groq():
     """
-    Test explicit failover: Mock a Gemini timeout and assert the call falls back to Groq.
+    Test 3-stage failover: Mock Gemini and Ollama failures and assert the call falls back to Groq.
     """
     provider = DualLLMProvider()
     
     mock_groq_resp = LLMResponse(
-        content="Groq fallback response after Gemini timeout.",
+        content="Groq fallback response after Gemini and Ollama fail.",
         tool_calls=[],
         provider_used="groq",
         error=None
     )
     
-    with patch.object(provider, "_call_gemini", side_effect=TimeoutError("Gemini call timed out after 15s")) as mock_gemini:
-        with patch.object(provider, "_call_groq", return_value=mock_groq_resp) as mock_groq:
-            res = provider.chat(
-                messages=[{"role": "user", "content": "Check logs"}],
-                tools=[]
-            )
-            assert res.provider_used == "groq"
-            mock_gemini.assert_called_once()
-            mock_groq.assert_called_once()
+    with patch.object(provider, "_call_gemini", side_effect=TimeoutError("Gemini call timed out")):
+        with patch.object(provider, "_call_ollama", side_effect=Exception("Ollama Connection Refused")):
+            with patch.object(provider, "_call_groq", return_value=mock_groq_resp) as mock_groq:
+                res = provider.chat(
+                    messages=[{"role": "user", "content": "Check logs"}],
+                    tools=[]
+                )
+                assert res.provider_used == "groq"
+                assert "Groq fallback" in res.content
+                mock_groq.assert_called_once()
 
 
-def test_both_providers_fail():
+def test_all_providers_fail():
     """
-    Test graceful structured error return when both Gemini and Groq fail.
+    Test graceful structured error return when all three providers fail.
     """
     provider = DualLLMProvider()
     
     with patch.object(provider, "_call_gemini", side_effect=Exception("Gemini Down")):
-        with patch.object(provider, "_call_groq", side_effect=Exception("Groq Down")):
-            res = provider.chat(
-                messages=[{"role": "user", "content": "Check status"}],
-                tools=[]
-            )
-            assert res.provider_used == "none"
-            assert res.error is not None
-            assert "Both LLM providers failed" in res.error
+        with patch.object(provider, "_call_ollama", side_effect=Exception("Ollama Down")):
+            with patch.object(provider, "_call_groq", side_effect=Exception("Groq Down")):
+                res = provider.chat(
+                    messages=[{"role": "user", "content": "Check status"}],
+                    tools=[]
+                )
+                assert res.provider_used == "none"
+                assert res.error is not None
+                assert "All LLM providers failed" in res.error

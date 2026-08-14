@@ -1,11 +1,14 @@
 # Environment variables & secrets
 .env
 *.env
+*.pem
+*.key
 
 # Python Virtual Environment
 venv/
 ENV/
 env/
+.venv/
 
 # Python Cache & Build Artifacts
 __pycache__/
@@ -24,9 +27,24 @@ htmlcov/
 # Local Databases & Vector Stores (Runtime data)
 data/incidents.db
 data/chroma_store/
+*.db
+*.sqlite
+
+# Runtime Logs & Temporary Scratch Files
+logs/
+*.log
+scratch/
+
+# Generated Evaluation Output Artifacts
+eval/ragas_evaluation_report.json
 
 # IDE & System Files
 .vscode/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Node.js & React Frontend
+node_modules/
+web/frontend/node_modules/
+web/frontend/dist/

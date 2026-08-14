@@ -1,0 +1,97 @@
+{
+  "metrics": {
+    "total_queries": 8,
+    "tool_selection_accuracy_pct": 100.0,
+    "task_success_rate_pct": 100.0,
+    "mean_latency_seconds": 12.48
+  },
+  "detailed_results": [
+    {
+      "id": "TC-01",
+      "category": "Build Telemetry",
+      "latency_s": 10.73,
+      "tool_accuracy": true,
+      "task_success": true,
+      "executed_tools": [
+        "get_build_status"
+      ]
+    },
+    {
+      "id": "TC-02",
+      "category": "Build Failure Diagnosis",
+      "latency_s": 27.36,
+      "tool_accuracy": true,
+      "task_success": true,
+      "executed_tools": [
+        "get_build_status",
+        "get_recent_commits",
+        "get_past_incidents",
+        "check_code_quality",
+        "get_build_logs"
+      ]
+    },
+    {
+      "id": "TC-03",
+      "category": "Code Quality Audit",
+      "latency_s": 20.7,
+      "tool_accuracy": true,
+      "task_success": true,
+      "executed_tools": [
+        "check_code_quality"
+      ]
+    },
+    {
+      "id": "TC-04",
+      "category": "Security Vulnerability Scan",
+      "latency_s": 13.6,
+      "tool_accuracy": true,
+      "task_success": true,
+      "executed_tools": [
+        "check_dependency_vulnerabilities",
+        "get_package_info"
+      ]
+    },
+    {
+      "id": "TC-05",
+      "category": "Service Outage Lookup",
+      "latency_s": 5.99,
+      "tool_accuracy": true,
+      "task_success": true,
+      "executed_tools": [
+        "check_service_status"
+      ]
+    },
+    {
+      "id": "TC-06",
+      "category": "Package Metadata Lookup",
+      "latency_s": 9.46,
+      "tool_accuracy": true,
+      "task_success": true,
+      "executed_tools": [
+        "get_package_info",
+        "check_dependency_vulnerabilities"
+      ]
+    },
+    {
+      "id": "TC-07",
+      "category": "Knowledge Base Lookup",
+      "latency_s": 5.17,
+      "tool_accuracy": true,
+      "task_success": true,
+      "executed_tools": [
+        "search_error_kb"
+      ]
+    },
+    {
+      "id": "TC-08",
+      "category": "Incident History Lookup",
+      "latency_s": 6.85,
+      "tool_accuracy": true,
+      "task_success": true,
+      "executed_tools": [
+        "get_past_incidents",
+        "get_past_incidents"
+      ]
+    }
+  ]
+}

@@ -31,6 +31,9 @@ def get_recent_commits(repo: str, limit: int = 5) -> Dict[str, Any]:
     try:
         with httpx.Client(timeout=10.0) as client:
             response = client.get(url, headers=headers)
+            if response.status_code == 401 and "Authorization" in headers:
+                headers_unauth = {"Accept": "application/vnd.github+json"}
+                response = client.get(url, headers=headers_unauth)
             
         if response.status_code != 200:
             return {

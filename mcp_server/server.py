@@ -8,7 +8,10 @@ import sys
 import glob
 import logging
 from typing import Dict, Any, List, Optional
-from mcp.server.fastmcp import FastMCP
+try:
+    from fastmcp import FastMCP
+except Exception:
+    from mcp.server.fastmcp import FastMCP
 
 # Ensure project root is in sys.path for imports
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -21,9 +24,10 @@ from mcp_server.tools.live_security_tools import check_dependency_vulnerabilitie
 from mcp_server.tools.live_repo_tools import get_recent_commits, check_service_status
 from mcp_server.tools.local_kb_tools import search_error_kb
 from mcp_server.tools.local_incident_tools import get_past_incidents, log_new_incident
+from mcp_server.tools.live_weather_tools import get_weather_by_ip
 
 # Initialize FastMCP Server
-mcp = FastMCP("DevSentinel MCP Server")
+mcp = FastMCP("DevOps AI MCP Server")
 
 # ---------------------------------------------------------------------------
 # Tool Registrations
@@ -99,6 +103,14 @@ def tool_get_past_incidents(component: Optional[str] = None, limit: int = 5) -> 
 )
 def tool_log_new_incident(component: str, summary: str, root_cause: str, resolution: str) -> Dict[str, Any]:
     return log_new_incident(component=component, summary=summary, root_cause=root_cause, resolution=resolution)
+
+
+@mcp.tool(
+    name="get_weather_by_ip",
+    description="Get current weather information by IP address or location."
+)
+def tool_get_weather_by_ip(ip_address: str = "auto") -> Dict[str, Any]:
+    return get_weather_by_ip(ip_address=ip_address)
 
 
 # ---------------------------------------------------------------------------

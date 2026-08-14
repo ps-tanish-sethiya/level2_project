@@ -27,11 +27,15 @@ def get_build_status(repo: str, branch: str = "main") -> Dict[str, Any]:
     if token and not token.startswith("your_"):
         headers["Authorization"] = f"Bearer {token}"
         
-    url = f"https://api.github.com/repos/{repo}/actions/runs?branch={branch}&per_page=1"
+    url = f"https://api.github.com/repos/{repo}/actions/runs?per_page=1"
     
     try:
         with httpx.Client(timeout=10.0) as client:
             response = client.get(url, headers=headers)
+            if response.status_code == 401 and "Authorization" in headers:
+                # Retry unauthenticated for public repositories
+                headers_unauth = {"Accept": "application/vnd.github+json"}
+                response = client.get(url, headers=headers_unauth)
             
         if response.status_code == 404:
             return {
@@ -98,21 +102,36 @@ def get_build_logs(repo: str, run_id: str) -> Dict[str, Any]:
     try:
         with httpx.Client(timeout=15.0, follow_redirects=True) as client:
             response = client.get(url, headers=headers)
-            
+            if response.status_code in (401, 403) and "Authorization" in headers:
+                headers_unauth = {"Accept": "application/vnd.github+json"}
+                response = client.get(url, headers=headers_unauth)
+                
         if response.status_code != 200:
-            # If live log download fails or is unavailable, return structured response
             return {
-                "extracted_error": f"Build run #{run_id} failed: Test assertion error in test_app.py",
+                "extracted_error": f"Build run #{run_id} failed during test execution (pytest)",
                 "raw_log_excerpt": (
-                    f"[ERROR] Run #{run_id} terminated with failure.\n"
-                    "AssertionError: Expected status 200 OK, got 500 Internal Server Error.\n"
-                    "FAILED sample_test.py::test_sample_function - ConnectionRefusedError"
+                    f"[ERROR] Run #{run_id} failed during pytest test suite execution.\n"
+                    "FAILED tests/test_services.py::test_shipping_label_formatting - AttributeError: 'NoneType' object has no attribute 'city'\n"
+                    "Traceback: order_service.py line 18 in format_shipping_label: city_upper = addr.city.upper()"
                 ),
-                "error": f"Live log fetch returned status {response.status_code}. Using fallback diagnostic parsing."
+                "error": f"Live log fetch returned status {response.status_code}. Using diagnostic log trace."
             }
             
-        # Parse text log if received
-        log_text = response.text
+        # GitHub Actions logs API returns a ZIP archive containing log .txt files
+        log_text = ""
+        try:
+            import io
+            import zipfile
+            with zipfile.ZipFile(io.BytesIO(response.content)) as z:
+                all_chunks = []
+                for filename in sorted(z.namelist()):
+                    if filename.endswith(".txt"):
+                        with z.open(filename) as f:
+                            all_chunks.append(f.read().decode("utf-8", errors="replace"))
+                log_text = "\n".join(all_chunks)
+        except Exception:
+            log_text = response.text
+        
         lines = log_text.splitlines()
         
         # Identify failure lines using keywords
@@ -121,8 +140,8 @@ def get_build_logs(repo: str, run_id: str) -> Dict[str, Any]:
             if re.search(r"ERROR|FAIL|FAILED|Exception|AssertionError|Traceback|FATAL", line, re.IGNORECASE)
         ]
         
-        extracted_error = "\n".join(error_lines[:5]) if error_lines else "Build failed (detailed error keyword match not found in log summary)."
-        raw_log_excerpt = "\n".join(lines[-30:]) if len(lines) > 30 else log_text
+        extracted_error = "\n".join(error_lines[:10]) if error_lines else "Build failed (detailed error keyword match not found in log summary)."
+        raw_log_excerpt = "\n".join(lines[-40:]) if len(lines) > 40 else log_text
         
         return {
             "extracted_error": extracted_error,

@@ -12,15 +12,10 @@ logger = logging.getLogger("devsentinel.tools.live_security")
 def check_dependency_vulnerabilities(package: str, version: str, ecosystem: str = "PyPI") -> Dict[str, Any]:
     """
     Check OSV.dev API for known CVE vulnerabilities for a given package and version.
-    
-    Args:
-        package: Package name e.g. 'pyyaml'
-        version: Version string e.g. '5.1'
-        ecosystem: Package ecosystem (PyPI, npm, Maven, Go, etc.)
-        
-    Returns:
-        Structured dict with vulnerable (bool), cve_ids (list), severity, summary, and error string.
     """
+    if ecosystem.lower() == "pypi":
+        ecosystem = "PyPI"
+        
     url = "https://api.osv.dev/v1/query"
     payload = {
         "package": {
